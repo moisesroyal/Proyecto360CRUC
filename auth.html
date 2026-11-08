@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso | Universidad Distribuida 360°</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <div class="auth-logo">🎓</div>
+      <h1>Universidad<br>Distribuida 360°</h1>
+      <p>Sistema de gestión y monitoreo de una base de datos universitaria distribuida entre Panamá, Coclé y Veraguas.</p>
+      <ul class="auth-features">
+        <li>✓ Infraestructura multisede</li>
+        <li>✓ Consultas globales</li>
+        <li>✓ Replicación y sincronización</li>
+        <li>✓ Monitoreo de transacciones 2PC</li>
+      </ul>
+    </section>
+
+    <section class="auth-panel">
+      <h2 id="formTitle">Iniciar sesión</h2>
+      <p class="auth-subtitle" id="formSubtitle">Accede al sistema completando tus datos.</p>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-mode="login">Iniciar sesión</button>
+        <button type="button" class="auth-tab" data-mode="register">Registrarse</button>
+      </div>
+
+      <form id="authForm" class="auth-form">
+        <!-- 1. Nombre completo (Solo visible al registrarse) -->
+        <div class="auth-field register-only" style="display: none;">
+          <label for="name">Nombre completo</label>
+          <input id="name" name="name" type="text" autocomplete="name" placeholder="Escriba su nombre">
+        </div>
+
+        <!-- 2. Campo exclusivo para Iniciar Sesión (Correo o Identificación) -->
+        <div class="auth-field login-only">
+          <label for="loginIdentifier">Correo electrónico o Identificación</label>
+          <input id="loginIdentifier" name="loginIdentifier" type="text" placeholder="Correo o número de cédula">
+        </div>
+
+        <!-- 2b. Campos exclusivos para Registrarse (Separados) -->
+        <div class="auth-field register-only" style="display: none;">
+          <label for="email">Correo electrónico institucional</label>
+          <input id="email" name="email" type="email" placeholder="Escriba su correo">
+        </div>
+
+        <div class="auth-field register-only" style="display: none;">
+          <label for="studentId">Número de Identificación</label>
+          <input id="studentId" name="studentId" type="text" placeholder="Número de cédula">
+        </div>
+
+        <!-- 3. Contraseña -->
+        <div class="auth-field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="Mínimo 8 caracteres">
+        </div>
+
+        <!-- Confirmar contraseña (Solo visible al registrarse) -->
+        <div class="auth-field register-only" style="display: none;">
+          <label for="confirmPassword">Confirmar contraseña</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Repite tu contraseña">
+        </div>
+
+        <div id="authMessage" class="auth-message" role="alert" aria-live="polite"></div>
+        <button class="auth-submit" type="submit" id="submitBtn">Entrar al sistema</button>
+      </form>
+
+      <p class="auth-footer" id="authFooterNote">sitio Web de prueba de matricula, hecho por: <strong>Estudiantes de Ingeniería en Informática.</strong></p>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>

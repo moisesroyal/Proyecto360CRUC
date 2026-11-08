@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universidad Distribuida 360°</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🎓</div>
+        <div>
+          <strong>Universidad<br>Distribuida 360°</strong>
+          <small>Base de Datos Distribuida</small>
+        </div>
+      </div>
+
+      <nav id="mainNav">
+        <button class="nav-item active" data-section="dashboard">⌂ <span>Dashboard</span></button>
+
+        <div class="nav-group">
+          <div class="nav-title">▣ Infraestructura</div>
+          <button class="nav-item" data-section="infrastructure">Estado de nodos</button>
+          <button class="nav-item" data-section="replication">Red y replicación</button>
+          <button class="nav-item" data-section="architecture">Arquitectura y Diccionario</button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-title">▤ Datos distribuidos</div>
+          <button class="nav-item" data-section="data">Distribución de datos</button>
+          <button class="nav-item" data-section="fragmentation">Fragmentación</button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-title">↻ Transacciones</div>
+          <button class="nav-item" data-section="transactions">Monitor 2PC</button>
+          <button class="nav-item" data-section="concurrency">Concurrencia y Bloqueos</button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-title">⌕ Consultas</div>
+          <button class="nav-item" data-section="queries">Consultas globales y JOINs</button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-title">⚠ Recuperación</div>
+          <button class="nav-item" data-section="recovery">Logs y fallos</button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-title">⚙ Administración</div>
+          <button class="nav-item" data-section="users">Usuarios y permisos</button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="online-dot"></span> Sistema en línea (Local)
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="breadcrumb">Universidad Distribuida 360°</span>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="user-area">
+          <span id="clock"></span>
+          <div class="avatar" id="userAvatar">D</div>
+          <div>
+            <strong id="userName">Dr. Carlos Mendoza</strong>
+            <small id="userRole">Administrador</small>
+          </div>
+          <button class="logout-btn" id="logoutBtn">Salir</button>
+        </div>
+      </header>
+
+      <!-- El contenido dinámico de las secciones se renderiza aquí desde script.js -->
+      <div id="content"></div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="auth-guard.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

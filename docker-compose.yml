@@ -1,0 +1,67 @@
+name: secretaria-virtual
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-secretaria_virtual}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-secretaria_virtual}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-secretaria_virtual}
+      SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion-360}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Dr. Carlos Mendoza}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@universidad.edu.pa}
+      SEED_ADMIN_CEDULA: ${SEED_ADMIN_CEDULA:-ADMIN-01}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-password123}
+      SEED_STUDENT_NAME: ${SEED_STUDENT_NAME:-Ana Rodríguez}
+      SEED_STUDENT_EMAIL: ${SEED_STUDENT_EMAIL:-estudiante@universidad.edu.pa}
+      SEED_STUDENT_CEDULA: ${SEED_STUDENT_CEDULA:-8-888-8888}
+      SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD:-password123}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000
+      STORAGE_SECRET: ${STORAGE_SECRET:-secretaria-virtual-nicegui-storage-secret}
+      UI_TITLE: ${UI_TITLE:-Universidad Distribuida 360°}
+      UI_HOST: 0.0.0.0
+      UI_PORT: 8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

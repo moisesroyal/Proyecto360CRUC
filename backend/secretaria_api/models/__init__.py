@@ -1,0 +1,61 @@
+"""Importa todos los modelos para que Alembic y SQLAlchemy los registren."""
+from .academic import (
+    Aula,
+    Carrera,
+    Escuela,
+    Facultad,
+    Grupo,
+    Horario,
+    Materia,
+    PeriodoAcademico,
+    PlanEstudio,
+    PlanMateria,
+    Prerrequisito,
+    Sede,
+)
+from .base import Base, TimestampMixin
+from .enrollment import Calificacion, DetalleMatricula, Matricula, Pago
+from .infrastructure import Auditoria, EventoLog, Nodo, TransaccionDistribuida
+from .people import (
+    Documento,
+    Estudiante,
+    Permiso,
+    Profesor,
+    Rol,
+    RolPermiso,
+    TituloAcademico,
+    Usuario,
+)
+
+__all__ = [
+    "Base",
+    "TimestampMixin",
+    "Sede",
+    "Facultad",
+    "Escuela",
+    "Carrera",
+    "PlanEstudio",
+    "Materia",
+    "PlanMateria",
+    "Prerrequisito",
+    "PeriodoAcademico",
+    "Aula",
+    "Grupo",
+    "Horario",
+    "Rol",
+    "Permiso",
+    "RolPermiso",
+    "Usuario",
+    "Estudiante",
+    "Profesor",
+    "TituloAcademico",
+    "Documento",
+    "Matricula",
+    "DetalleMatricula",
+    "Calificacion",
+    "Pago",
+    "Nodo",
+    "TransaccionDistribuida",
+    "Auditoria",
+    "EventoLog",
+]
