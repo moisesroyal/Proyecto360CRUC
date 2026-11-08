@@ -25,6 +25,8 @@ from ..components import (
     page_intro,
     progress,
     raw,
+    sim_badge,
+    sim_notice,
     stat_line,
     table,
     timeline,
@@ -86,7 +88,8 @@ async def render_admin_dashboard(user: dict) -> None:
     period = data.get("periodo") or {}
     page_intro(
         "Panorama general de la universidad distribuida: matrícula, nodos, "
-        "replicación y actividad reciente."
+        "replicación y actividad reciente. La infraestructura distribuida es una "
+        "simulación académica sobre una única base de datos."
     )
     kpis(
         [
@@ -160,6 +163,12 @@ async def render_infrastructure(user: dict) -> None:
         "Monitoreo de los nodos que componen la base de datos distribuida. "
         "Puede alternar la disponibilidad de cada nodo para simular fallos."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "Los nodos y sus estados son un modelo lógico de la topología universitaria; "
+        "no representan procesos reales corriendo en cada sede."
+    )
     kpis(
         [
             ("Nodos en línea", f"{online}/{len(nodes)}", "Disponibilidad de la red"),
@@ -225,6 +234,12 @@ async def render_replication(user: dict) -> None:
         "Topología de replicación entre las sedes de Panamá, Coclé y Veraguas, "
         "con el estado de cada enlace de comunicación."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "La replicación es una simulación lógica: los enlaces y porcentajes se "
+        "calculan en el backend sobre una única base de datos, sin sincronización real."
+    )
     kpis(
         [
             ("Réplicas activas", sum(1 for n in nodes if n["estado"] == "online"), "Nodos operativos"),
@@ -264,9 +279,10 @@ async def render_replication(user: dict) -> None:
                     )
     with card("Estrategia de replicación", "Catálogo y matrícula"):
         alert(
-            "Panamá mantiene el catálogo institucional y las sedes regionales replican "
-            "la matrícula y las calificaciones. Cada operación de escritura se propaga "
-            "a las réplicas mediante el protocolo de dos fases (2PC).",
+            "Modelo lógico de replicación: Panamá mantendría el catálogo institucional "
+            "y las sedes regionales replicarían matrícula y calificaciones. En esta "
+            "simulación no hay propagación real de datos entre nodos ni 2PC efectivo; "
+            "todo reside en una sola base de datos.",
             "warning",
         )
 
@@ -319,6 +335,12 @@ async def render_data(user: dict) -> None:
         "Distribución de los datos entre sedes. La matrícula se fragmenta de forma "
         "horizontal y el catálogo académico se replica desde Panamá."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "Fragmentación y replicación son un modelo lógico: los fragmentos se "
+        "calculan por sede sobre una única base de datos compartida."
+    )
     total_students = sum(f["estudiantes"] for f in data["fragmentos"])
     total_groups = sum(f["grupos"] for f in data["fragmentos"])
     kpis(
@@ -357,6 +379,12 @@ async def render_fragmentation(user: dict) -> None:
         "Detalle de la fragmentación horizontal por sede y de las estrategias "
         "de distribución aplicadas al esquema académico."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "La fragmentación es una simulación lógica con fines académicos: no existen "
+        "fragmentos físicos ni consultas distribuidas reales."
+    )
     with card("Fragmentos horizontales", "Estudiantes y grupos por sede"):
         table(
             ["Sede", "Fragmento", "Estudiantes", "Grupos", "Estrategia"],
@@ -379,8 +407,9 @@ async def render_fragmentation(user: dict) -> None:
         for replica in data["replicas"]:
             ui.html(f'<div class="alert success">{esc(replica)}</div>')
         alert(
-            "La fragmentación permite que cada sede consulte localmente sus estudiantes "
-            "y grupos, mientras las consultas globales integran los fragmentos.",
+            "En esta simulación, la fragmentación es solo un modelo lógico: cada "
+            "sede consultaría localmente sus datos y las consultas globales "
+            "integrarían los fragmentos. Actualmente todo reside en una sola BD.",
             "warning",
         )
 
@@ -390,6 +419,13 @@ async def render_transactions(user: dict) -> None:
     page_intro(
         "Monitor de transacciones distribuidas con el protocolo de confirmación de "
         "dos fases (2PC). Puede simular una transacción exitosa o un rollback."
+    )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "Simulación académica del 2PC: las transacciones registradas aquí son "
+        "registros de demostración; no coordinan nodos reales ni escriben en "
+        "participantes distribuidos."
     )
     kpis(
         [
@@ -413,14 +449,53 @@ async def render_transactions(user: dict) -> None:
 
     with grid("grid-2"):
         with card("Simular transacción 2PC", "Nueva operación distribuida"):
-            tipo = _select("Tipo de transacción", {"Actualización": "Actualización", "Consulta": "Consulta", "Inserción": "Inserción"}, "Actualización")
-            nodos = ui.number("Nodos involucrados", value=3, min=1, max=10).props("outlined dense").classes("w-full")
-            rollback = ui.switch("Forzar ROLLBACK")
-            ui.button(
-                "Ejecutar simulación",
-                on_click=lambda: simulate(tipo.value, int(nodos.value or 3), bool(rollback.value)),
-            ).classes("primary-btn").props("no-caps unelevated")
-        with card("Fases del protocolo", "Confirmación de dos fases"):
+            ui.label("Tipo de operación").style(
+                "font-size:12px;font-weight:700;color:var(--muted)"
+            )
+            tipo_state = {"value": "Actualización"}
+            pill_refs = {}
+
+            def select_tipo(value: str) -> None:
+                tipo_state["value"] = value
+                for option, btn in pill_refs.items():
+                    active = option == value
+                    btn.classes(
+                        add="pill-btn-active" if active else None,
+                        remove=None if active else "pill-btn-active",
+                    )
+
+            pill_box = ui.element("div").classes("w-full").style(
+                "display:flex;gap:8px;flex-wrap:wrap"
+            )
+            with pill_box:
+                for option in ("Actualización", "Inserción", "Consulta"):
+                    pill_refs[option] = ui.button(
+                        option,
+                        on_click=lambda v=option: select_tipo(v),
+                    ).props("flat no-caps unelevated dense").classes("pill-btn")
+            select_tipo("Actualización")
+
+            ui.label("Nodos involucrados").style(
+                "font-size:12px;font-weight:700;color:var(--muted)"
+            )
+            nodos = (
+                ui.number(value=3, min=1, max=10)
+                .props("outlined dense")
+                .classes("w-full")
+            )
+
+            with ui.element("div").classes("w-full").style(
+                "display:flex;align-items:center;justify-content:space-between;gap:12px;"
+                "padding-top:14px;border-top:1px solid var(--border)"
+            ):
+                rollback = ui.checkbox("Forzar ROLLBACK en la transacción")
+                ui.button(
+                    "Ejecutar simulación",
+                    on_click=lambda: simulate(
+                        tipo_state["value"], int(nodos.value or 3), bool(rollback.value)
+                    ),
+                ).classes("primary-btn").style("margin-top:0").props("no-caps unelevated")
+        with card("Fases del protocolo (modelo)", "Confirmación de dos fases — simulación"):
             timeline(
                 [
                     ("Fase 1", "El coordinador envía PREPARE a todos los nodos."),
@@ -459,6 +534,12 @@ async def render_concurrency(user: dict) -> None:
         "Simulación de bloqueos y control de concurrencia sobre las operaciones de "
         "matrícula. Se aplican bloqueos compartidos para evitar condiciones de carrera."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "La secuencia de bloqueo es ilustrativa; los bloqueos reales aplicados en "
+        "matrícula usan SELECT ... FOR UPDATE sobre la base de datos única."
+    )
     kpis(
         [
             ("Registros bloqueados", data["registros_bloqueados"], "Detalles de matrícula activos"),
@@ -488,7 +569,13 @@ async def render_queries(user: dict) -> None:
         "Ejecute consultas SELECT/WITH sobre el esquema distribuido. Las consultas "
         "globales combinan fragmentos de estudiantes, matrículas y calificaciones."
     )
-    with card("Editor SQL", "Solo se permiten consultas de lectura"):
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "Las consultas se ejecutan sobre la base de datos única; la integración de "
+        "fragmentos es parte del modelo simulado, no una consulta distribuida real."
+    )
+    with card("Editor SQL", "Solo se permiten consultas de lectura (simulación)"):
         sql = ui.textarea(
             "Consulta",
             value=(
@@ -546,6 +633,12 @@ async def render_recovery(user: dict) -> None:
         "Registro de eventos del sistema. Los logs permiten reconstruir la actividad "
         "y detectar fallos de nodos, transacciones y procesos de matrícula."
     )
+    with ui.element("div").classes("mini-actions"):
+        sim_badge()
+    sim_notice(
+        "La estrategia de recuperación descrita es un modelo teórico de tolerancia "
+        "a fallos; no existe conmutación automática de nodos en esta simulación."
+    )
     kpis(
         [
             ("Eventos", len(logs), "Últimos registros"),
@@ -568,7 +661,7 @@ async def render_recovery(user: dict) -> None:
             ],
             empty_text="No hay eventos registrados.",
         )
-    with card("Estrategia de recuperación", "Tolerancia a fallos"):
+    with card("Estrategia de recuperación (modelo teórico)", "Tolerancia a fallos — simulación"):
         timeline(
             [
                 ("1. Detección", "El monitor identifica un nodo fuera de línea o una transacción incompleta."),
@@ -986,7 +1079,10 @@ async def render_groups(user: dict) -> None:
     client = api()
     grupos = await client.get("/academic/grupos")
     catalog = await client.get("/academic/catalog")
-    profesores = await client.get("/users/professors")
+    try:
+        profesores = await client.get("/users/professors")
+    except ApiError:
+        profesores = []
     aulas = await client.get("/academic/aulas")
     periodos = await client.get("/academic/periodos")
 

@@ -15,6 +15,16 @@ from .academic import (
 )
 from .base import Base, TimestampMixin
 from .enrollment import Calificacion, DetalleMatricula, Matricula, Pago
+from .enums import (
+    EstadoActivo,
+    EstadoDetalle,
+    EstadoGrupo,
+    EstadoMatricula,
+    EstadoNodo,
+    EstadoPago,
+    EstadoPeriodo,
+    EstadoTransaccion,
+)
 from .infrastructure import Auditoria, EventoLog, Nodo, TransaccionDistribuida
 from .people import (
     Documento,
@@ -58,4 +68,12 @@ __all__ = [
     "TransaccionDistribuida",
     "Auditoria",
     "EventoLog",
+    "EstadoActivo",
+    "EstadoDetalle",
+    "EstadoGrupo",
+    "EstadoMatricula",
+    "EstadoNodo",
+    "EstadoPago",
+    "EstadoPeriodo",
+    "EstadoTransaccion",
 ]

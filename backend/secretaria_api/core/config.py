@@ -26,6 +26,13 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
 def _env_list(name: str, default: str) -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip() for item in raw.split(",") if item.strip()]
@@ -45,6 +52,7 @@ class Settings:
     secret_key: str = _env("SECRET_KEY", "cambia-esta-clave-en-produccion-360")
     access_token_expire_minutes: int = _env_int("ACCESS_TOKEN_EXPIRE_MINUTES", 480)
     max_credits_default: int = _env_int("MAX_CREDITS_DEFAULT", 24)
+    matricula_fee: float = _env_float("MATRICULA_FEE", 150.0)
 
     cors_origins: list[str] = field(
         default_factory=lambda: _env_list(

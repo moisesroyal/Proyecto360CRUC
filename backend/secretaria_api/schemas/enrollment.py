@@ -4,6 +4,8 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..models.enums import EstadoDetalle, EstadoMatricula, EstadoPago
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -16,7 +18,7 @@ class EnrollRequest(BaseModel):
 
 class EnrollResponse(BaseModel):
     id_matricula: int
-    estado: str
+    estado: EstadoMatricula
     total_creditos: int
     mensaje: str
     advertencias: list[str] = Field(default_factory=list)
@@ -26,7 +28,7 @@ class DetalleOut(ORMModel):
     id_detalle: int
     id_matricula: int
     id_grupo: int
-    estado: str
+    estado: EstadoDetalle
     nota_final: float | None = None
 
 
@@ -35,7 +37,7 @@ class MatriculaOut(ORMModel):
     id_estudiante: int
     id_periodo: int
     fecha: date
-    estado: str
+    estado: EstadoMatricula
     total_creditos: int
 
 
@@ -63,7 +65,7 @@ class PagoCreate(BaseModel):
     monto: float = Field(gt=0)
     metodo: str = "transferencia"
     referencia: str | None = None
-    estado: str = "pagado"
+    estado: EstadoPago = EstadoPago.PAGADO
 
 
 class PagoOut(ORMModel):
@@ -71,7 +73,7 @@ class PagoOut(ORMModel):
     id_matricula: int
     monto: float
     fecha: date
-    estado: str
+    estado: EstadoPago
     referencia: str | None = None
     metodo: str
     registrado_por: int | None = None

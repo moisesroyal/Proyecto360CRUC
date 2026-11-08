@@ -12,6 +12,9 @@ from ...core.database import get_db
 from ...models import (
     Auditoria,
     Base,
+    EstadoDetalle,
+    EstadoNodo,
+    EstadoTransaccion,
     EventoLog,
     Nodo,
     TransaccionDistribuida,
@@ -55,8 +58,8 @@ def alternar_nodo(
     nodo = db.get(Nodo, id_nodo)
     if not nodo:
         raise HTTPException(status_code=404, detail="Nodo no encontrado.")
-    nodo.estado = "offline" if nodo.estado == "online" else "online"
-    nodo.replicacion_pct = 0 if nodo.estado == "offline" else 100
+    nodo.estado = EstadoNodo.OFFLINE if nodo.estado == EstadoNodo.ONLINE else EstadoNodo.ONLINE
+    nodo.replicacion_pct = 0 if nodo.estado == EstadoNodo.OFFLINE else 100
     nodo.ultima_sincronizacion = datetime.now(timezone.utc)
     registrar_auditoria(
         db,
@@ -64,13 +67,13 @@ def alternar_nodo(
         "ACTUALIZAR",
         "nodo",
         nodo.id_nodo,
-        f"Nodo {nodo.nombre} -> {nodo.estado}",
+        f"Nodo {nodo.nombre} -> {nodo.estado.value}",
         get_client_ip(request),
     )
     registrar_evento(
         db,
-        f"Nodo {nodo.nombre} cambiado a estado {nodo.estado}.",
-        nivel="WARNING" if nodo.estado == "offline" else "INFO",
+        f"Nodo {nodo.nombre} cambiado a estado {nodo.estado.value}.",
+        nivel="WARNING" if nodo.estado == EstadoNodo.OFFLINE else "INFO",
         origen="infraestructura",
     )
     db.commit()
@@ -89,14 +92,16 @@ def replicacion(_: Usuario = Depends(get_current_user), db: Session = Depends(ge
                     "destino": destino.nombre,
                     "latencia_ms": max(origen.latencia_ms, destino.latencia_ms),
                     "estado": "Conectado"
-                    if origen.estado == "online" and destino.estado == "online"
+                    if origen.estado == EstadoNodo.ONLINE and destino.estado == EstadoNodo.ONLINE
                     else "Degradado",
                 }
             )
     return {
         "nodos": [node_out(nodo) for nodo in nodos],
         "enlaces": enlaces,
-        "replicacion_activa": all(nodo.estado == "online" for nodo in nodos) if nodos else False,
+        "replicacion_activa": all(nodo.estado == EstadoNodo.ONLINE for nodo in nodos) if nodos else False,
+        "simulado": True,
+        "nota": "Replicación lógica simulada: los enlaces y estados se calculan sobre una única base de datos; no existe sincronización real entre nodos.",
     }
 
 
@@ -122,13 +127,13 @@ def simular_transaccion(
     db: Session = Depends(get_db),
 ):
     total = int(db.scalar(select(func.count()).select_from(TransaccionDistribuida)) or 0) + 1
-    estado_final = "ROLLBACK" if payload.forzar_rollback else "COMMIT"
+    estado_final = EstadoTransaccion.ROLLBACK if payload.forzar_rollback else EstadoTransaccion.COMMIT
     transaccion = TransaccionDistribuida(
         codigo=f"TXN-{1000 + total}",
         tipo=payload.tipo,
         estado=estado_final,
         nodos_involucrados=payload.nodos,
-        detalle="Simulación 2PC: PREPARE -> " + estado_final,
+        detalle=f"Simulación 2PC: PREPARE -> {estado_final.value}",
         finalizada_en=datetime.now(timezone.utc),
     )
     db.add(transaccion)
@@ -138,12 +143,12 @@ def simular_transaccion(
         "SIMULAR",
         "transaccion_distribuida",
         transaccion.codigo,
-        f"2PC {estado_final} en {payload.nodos} nodos",
+        f"2PC {estado_final.value} en {payload.nodos} nodos",
         get_client_ip(request),
     )
     registrar_evento(
         db,
-        f"Transacción {transaccion.codigo} finalizada en {estado_final}.",
+        f"Transacción {transaccion.codigo} finalizada en {estado_final.value}.",
         nivel="WARNING" if payload.forzar_rollback else "INFO",
         origen="2pc",
     )
@@ -236,7 +241,7 @@ def ejecutar_consulta(
         "columnas": columnas,
         "filas": filas,
         "total": len(filas),
-        "mensaje": f"Consulta ejecutada. Se muestran hasta 100 filas.",
+        "mensaje": "Consulta ejecutada sobre la base de datos única (simulación de integración de fragmentos). Se muestran hasta 100 filas.",
     }
 
 
@@ -311,6 +316,8 @@ def fragmentacion(_: Usuario = Depends(get_current_user), db: Session = Depends(
                 "descripcion": "Catálogo replicado en Panamá; matrícula fragmentada por sede.",
             },
         ],
+        "simulado": True,
+        "nota": "Fragmentación horizontal simulada: los fragmentos se calculan por sede sobre una única base de datos; no hay particiones físicas.",
     }
 
 
@@ -324,7 +331,7 @@ def simular_concurrencia(
         db.scalar(
             select(func.count())
             .select_from(DetalleMatricula)
-            .where(DetalleMatricula.estado == "inscrito")
+            .where(DetalleMatricula.estado == EstadoDetalle.INSCRITO)
         )
         or 0
     )
@@ -337,5 +344,6 @@ def simular_concurrencia(
             "COMMIT / liberación de bloqueos",
         ],
         "registros_bloqueados": bloqueos,
-        "mensaje": "Simulación de bloqueo de dos fases completada sin interbloqueos.",
+        "simulado": True,
+        "mensaje": "Simulación lógica de bloqueo de dos fases completada sin interbloqueos. Los bloqueos reales de matrícula usan SELECT ... FOR UPDATE en la base de datos única.",
     }

@@ -7,6 +7,11 @@ from sqlalchemy.orm import Session, selectinload
 from ..models import (
     DetalleMatricula,
     Estudiante,
+    EstadoActivo,
+    EstadoDetalle,
+    EstadoGrupo,
+    EstadoMatricula,
+    EstadoPeriodo,
     Grupo,
     Horario,
     Matricula,
@@ -34,7 +39,7 @@ def cupos_ocupados(db: Session, id_grupo: int) -> int:
         db.scalar(
             select(func.count(DetalleMatricula.id_detalle)).where(
                 DetalleMatricula.id_grupo == id_grupo,
-                DetalleMatricula.estado == "inscrito",
+                DetalleMatricula.estado == EstadoDetalle.INSCRITO,
             )
         )
         or 0
@@ -52,8 +57,8 @@ def materias_aprobadas(db: Session, estudiante: Estudiante) -> set[int]:
         .join(Matricula, Matricula.id_matricula == DetalleMatricula.id_matricula)
         .where(
             Matricula.id_estudiante == estudiante.id_estudiante,
-            Matricula.estado != "anulada",
-            DetalleMatricula.estado == "inscrito",
+            Matricula.estado != EstadoMatricula.ANULADA,
+            DetalleMatricula.estado == EstadoDetalle.INSCRITO,
             DetalleMatricula.nota_final.is_not(None),
             DetalleMatricula.nota_final >= 71,
         )
@@ -115,8 +120,8 @@ def grupos_matriculados(
         .where(
             Matricula.id_estudiante == estudiante.id_estudiante,
             Matricula.id_periodo == id_periodo,
-            Matricula.estado != "anulada",
-            DetalleMatricula.estado == "inscrito",
+            Matricula.estado != EstadoMatricula.ANULADA,
+            DetalleMatricula.estado == EstadoDetalle.INSCRITO,
         )
         .options(selectinload(Grupo.horarios))
     )
@@ -135,23 +140,34 @@ def matricular(
     from .audit import registrar_auditoria, registrar_evento
 
     estudiante = obtener_estudiante(db, usuario)
+    # Bloquea la fila del estudiante para serializar matrículas concurrentes del mismo usuario.
+    db.scalar(
+        select(Estudiante)
+        .where(Estudiante.id_estudiante == estudiante.id_estudiante)
+        .with_for_update()
+    )
     periodo = db.get(PeriodoAcademico, id_periodo)
     if not periodo:
         raise EnrollmentError("El período académico no existe.")
-    if not periodo.matricula_abierta or periodo.estado != "abierto":
+    if not periodo.matricula_abierta or periodo.estado != EstadoPeriodo.ABIERTO:
         raise EnrollmentError("La matrícula de este período no está abierta.")
 
-    if estudiante.estado != "activo":
+    if estudiante.estado != EstadoActivo.ACTIVO:
         raise EnrollmentError("El expediente del estudiante no está activo.")
 
     ids_unicos = list(dict.fromkeys(id_grupos))
     if not ids_unicos:
         raise EnrollmentError("Debe seleccionar al menos un grupo.")
 
+    # Bloquea las filas de los grupos en orden determinista (id_grupo) para
+    # serializar la verificación de cupos y evitar sobreventa (overselling)
+    # y deadlocks entre matrículas concurrentes.
     grupos = list(
         db.scalars(
             select(Grupo)
             .where(Grupo.id_grupo.in_(ids_unicos))
+            .order_by(Grupo.id_grupo)
+            .with_for_update()
             .options(
                 selectinload(Grupo.materia),
                 selectinload(Grupo.horarios),
@@ -166,7 +182,7 @@ def matricular(
     for grupo in grupos:
         if grupo.id_periodo != id_periodo:
             raise EnrollmentError("Todos los grupos deben pertenecer al mismo período.")
-        if grupo.estado != "abierto":
+        if grupo.estado != EstadoGrupo.ABIERTO:
             raise EnrollmentError(f"El grupo {grupo.codigo} no está abierto.")
         if cupos_disponibles(db, grupo) <= 0:
             raise EnrollmentError(f"El grupo {grupo.codigo} no tiene cupos disponibles.")
@@ -183,13 +199,14 @@ def matricular(
             Matricula.id_estudiante == estudiante.id_estudiante,
             Matricula.id_periodo == id_periodo,
         )
+        .with_for_update()
         .options(selectinload(Matricula.detalles))
     )
-    if matricula and matricula.estado == "confirmada":
+    if matricula and matricula.estado == EstadoMatricula.CONFIRMADA:
         raise EnrollmentError(
             "La matrícula de este período ya está confirmada. Contacte a Secretaría."
         )
-    if matricula and matricula.estado == "anulada":
+    if matricula and matricula.estado == EstadoMatricula.ANULADA:
         raise EnrollmentError("La matrícula de este período fue anulada. Contacte a Secretaría.")
 
     existentes = grupos_matriculados(db, estudiante, id_periodo, matricula.id_matricula if matricula else None)
@@ -221,7 +238,7 @@ def matricular(
         matricula = Matricula(
             id_estudiante=estudiante.id_estudiante,
             id_periodo=id_periodo,
-            estado="pendiente",
+            estado=EstadoMatricula.PENDIENTE,
             total_creditos=0,
         )
         db.add(matricula)
@@ -232,7 +249,7 @@ def matricular(
             DetalleMatricula(
                 id_matricula=matricula.id_matricula,
                 id_grupo=grupo.id_grupo,
-                estado="inscrito",
+                estado=EstadoDetalle.INSCRITO,
             )
         )
 

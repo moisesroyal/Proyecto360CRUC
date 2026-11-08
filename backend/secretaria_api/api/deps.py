@@ -52,6 +52,25 @@ def get_current_user(
     return usuario
 
 
+def estudiante_actual(db: Session, usuario: Usuario):
+    """Devuelve el expediente de estudiante del usuario o un 403 limpio."""
+    from ..models import Estudiante
+    from ..services.enrollment_service import EnrollmentError, obtener_estudiante
+
+    try:
+        estudiante: Estudiante = obtener_estudiante(db, usuario)
+    except EnrollmentError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    return estudiante
+
+
+def get_current_estudiante(
+    usuario: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return estudiante_actual(db, usuario)
+
+
 def require_roles(*roles: str) -> Callable[..., Usuario]:
     allowed = {rol.lower() for rol in roles}
 

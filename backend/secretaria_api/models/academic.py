@@ -15,7 +15,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin
+from .base import Base, TimestampMixin, enum_column
+from .enums import EstadoActivo, EstadoGrupo, EstadoPeriodo
 
 
 class Sede(Base, TimestampMixin):
@@ -83,7 +84,9 @@ class PlanEstudio(Base, TimestampMixin):
     nombre: Mapped[str] = mapped_column(String(160), nullable=False)
     anio: Mapped[int] = mapped_column(Integer, nullable=False)
     creditos_totales: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
+    estado: Mapped[EstadoActivo] = mapped_column(
+        enum_column(EstadoActivo), default=EstadoActivo.ACTIVO, nullable=False
+    )
 
     carrera: Mapped[Carrera] = relationship(back_populates="planes")
     materias: Mapped[list["PlanMateria"]] = relationship(
@@ -157,9 +160,11 @@ class PeriodoAcademico(Base, TimestampMixin):
     tipo: Mapped[str] = mapped_column(String(30), default="semestre", nullable=False)
     fecha_inicio: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_fin: Mapped[date] = mapped_column(Date, nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="planificado", nullable=False)
     matricula_abierta: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     max_creditos: Mapped[int] = mapped_column(Integer, default=24, nullable=False)
+    estado: Mapped[EstadoPeriodo] = mapped_column(
+        enum_column(EstadoPeriodo), default=EstadoPeriodo.PLANIFICADO, nullable=False
+    )
 
     grupos: Mapped[list["Grupo"]] = relationship(back_populates="periodo")
     matriculas: Mapped[list["Matricula"]] = relationship(back_populates="periodo")
@@ -193,7 +198,9 @@ class Grupo(Base, TimestampMixin):
     id_sede: Mapped[int] = mapped_column(ForeignKey("sede.id_sede"), nullable=False)
     codigo: Mapped[str] = mapped_column(String(30), nullable=False)
     cupo: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="abierto", nullable=False)
+    estado: Mapped[EstadoGrupo] = mapped_column(
+        enum_column(EstadoGrupo), default=EstadoGrupo.ABIERTO, nullable=False
+    )
 
     __table_args__ = (
         UniqueConstraint("id_periodo", "codigo", name="uq_grupo_periodo_codigo"),

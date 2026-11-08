@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..models.enums import EstadoNodo, EstadoTransaccion
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -14,7 +16,7 @@ class NodoOut(ORMModel):
     nombre: str
     rol: str
     host: str
-    estado: str
+    estado: EstadoNodo
     latencia_ms: int
     replicacion_pct: float
     id_sede: int | None = None
@@ -22,7 +24,7 @@ class NodoOut(ORMModel):
 
 
 class NodoUpdate(BaseModel):
-    estado: str | None = None
+    estado: EstadoNodo | None = None
     latencia_ms: int | None = None
     replicacion_pct: float | None = None
 
@@ -31,7 +33,7 @@ class TransaccionOut(ORMModel):
     id_transaccion: int
     codigo: str
     tipo: str
-    estado: str
+    estado: EstadoTransaccion
     nodos_involucrados: int
     detalle: str | None = None
     iniciada_en: datetime

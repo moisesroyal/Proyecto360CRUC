@@ -11,6 +11,9 @@ from ...models import (
     DetalleMatricula,
     Escuela,
     Estudiante,
+    EstadoGrupo,
+    EstadoMatricula,
+    EstadoPeriodo,
     Facultad,
     Grupo,
     Horario,
@@ -414,7 +417,7 @@ def toggle_matricula(
     if not periodo:
         raise HTTPException(status_code=404, detail="Período no encontrado.")
     periodo.matricula_abierta = not periodo.matricula_abierta
-    periodo.estado = "abierto" if periodo.matricula_abierta else "cerrado"
+    periodo.estado = EstadoPeriodo.ABIERTO if periodo.matricula_abierta else EstadoPeriodo.CERRADO
     registrar_auditoria(
         db,
         usuario,
@@ -508,7 +511,7 @@ def crear_grupo(
         id_profesor=payload.id_profesor,
         codigo=payload.codigo,
         cupo=payload.cupo,
-        estado="abierto",
+        estado=EstadoGrupo.ABIERTO,
     )
     db.add(grupo)
     db.flush()
@@ -560,7 +563,7 @@ def ofertas_disponibles(
 
     grupos = db.scalars(
         _grupo_query()
-        .where(Grupo.id_periodo == periodo_id, Grupo.estado == "abierto")
+        .where(Grupo.id_periodo == periodo_id, Grupo.estado == EstadoGrupo.ABIERTO)
         .order_by(Grupo.codigo)
     ).all()
 
@@ -571,7 +574,7 @@ def ofertas_disponibles(
             .where(
                 Matricula.id_estudiante == estudiante.id_estudiante,
                 Matricula.id_periodo == periodo_id,
-                Matricula.estado != "anulada",
+                Matricula.estado != EstadoMatricula.ANULADA,
             )
         ).all()
     )
@@ -586,7 +589,7 @@ def ofertas_disponibles(
             not ya
             and not pendientes
             and disponible > 0
-            and grupo.estado == "abierto"
+            and grupo.estado == EstadoGrupo.ABIERTO
         )
         motivo = ""
         if ya:

@@ -8,7 +8,16 @@ from sqlalchemy.orm import Session, selectinload
 
 from ...core.database import get_db
 from ...core.security import create_access_token, hash_password, verify_password
-from ...models import Carrera, Estudiante, Permiso, PlanEstudio, Rol, RolPermiso, Usuario
+from ...models import (
+    Carrera,
+    Estudiante,
+    EstadoActivo,
+    Permiso,
+    PlanEstudio,
+    Rol,
+    RolPermiso,
+    Usuario,
+)
 from ...schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from ...services.audit import registrar_auditoria, registrar_evento
 from ..deps import get_client_ip, get_current_user
@@ -109,7 +118,7 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
             id_carrera=carrera.id_carrera,
             id_plan=plan.id_plan if plan else None,
             codigo=f"EST-{datetime.now().year}-{usuario.id_usuario:04d}",
-            estado="activo",
+            estado=EstadoActivo.ACTIVO,
             anio_ingreso=datetime.now().year,
         )
         db.add(estudiante)

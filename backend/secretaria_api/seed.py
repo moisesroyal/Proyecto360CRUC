@@ -20,6 +20,14 @@ from .models import (
     DetalleMatricula,
     Escuela,
     Estudiante,
+    EstadoActivo,
+    EstadoDetalle,
+    EstadoGrupo,
+    EstadoMatricula,
+    EstadoNodo,
+    EstadoPago,
+    EstadoPeriodo,
+    EstadoTransaccion,
     EventoLog,
     Facultad,
     Grupo,
@@ -208,7 +216,7 @@ def seed_estructura(db: Session) -> dict:
         {"nombre": "Plan 2022", "id_carrera": carrera.id_carrera},
         anio=2022,
         creditos_totales=220,
-        estado="activo",
+        estado=EstadoActivo.ACTIVO,
     )
 
     materias_data = [
@@ -263,10 +271,10 @@ def seed_estructura(db: Session) -> dict:
 
     periodos = {}
     for nombre, anio, numero, inicio, fin, estado, abierto, max_creditos in [
-        ("2025-II", 2025, 2, date(2025, 8, 1), date(2025, 12, 15), "cerrado", False, 24),
-        ("2026-I", 2026, 1, date(2026, 3, 1), date(2026, 7, 15), "cerrado", False, 24),
-        ("2026-II", 2026, 2, date(2026, 8, 1), date(2026, 12, 15), "abierto", True, 24),
-        ("2027-I", 2027, 1, date(2027, 3, 1), date(2027, 7, 15), "planificado", False, 24),
+        ("2025-II", 2025, 2, date(2025, 8, 1), date(2025, 12, 15), EstadoPeriodo.CERRADO, False, 24),
+        ("2026-I", 2026, 1, date(2026, 3, 1), date(2026, 7, 15), EstadoPeriodo.CERRADO, False, 24),
+        ("2026-II", 2026, 2, date(2026, 8, 1), date(2026, 12, 15), EstadoPeriodo.ABIERTO, True, 24),
+        ("2027-I", 2027, 1, date(2027, 3, 1), date(2027, 7, 15), EstadoPeriodo.PLANIFICADO, False, 24),
     ]:
         periodo, _ = _get_or_create(
             db,
@@ -413,7 +421,7 @@ def seed_personas(db: Session, base: dict) -> dict:
                 id_sede=usuario.id_sede,
                 categoria=categoria,
                 dedicacion=dedicacion,
-                estado="activo",
+                estado=EstadoActivo.ACTIVO,
             )
             db.add(profesor)
             db.flush()
@@ -453,7 +461,7 @@ def seed_personas(db: Session, base: dict) -> dict:
                 id_carrera=base["carrera"].id_carrera,
                 id_plan=base["plan"].id_plan,
                 codigo=codigo,
-                estado="activo",
+                estado=EstadoActivo.ACTIVO,
                 indice_academico=indice,
                 anio_ingreso=2022,
             )
@@ -514,7 +522,7 @@ def seed_oferta(db: Session, base: dict, personas: dict) -> list[Grupo]:
             id_profesor=id_profesor,
             id_sede=sede_cocle,
             cupo=cupo,
-            estado="abierto",
+            estado=EstadoGrupo.ABIERTO,
         )
         grupos.append(grupo)
         if creado:
@@ -560,7 +568,7 @@ def _asegurar_matricula(
             DetalleMatricula(
                 id_matricula=matricula.id_matricula,
                 id_grupo=grupo.id_grupo,
-                estado="inscrito",
+                estado=EstadoDetalle.INSCRITO,
             )
         )
     db.flush()
@@ -596,14 +604,14 @@ def seed_matriculas(db: Session, base: dict, grupos: list[Grupo]) -> None:
                 id_profesor=None,
                 codigo=f"{codigo}-H",
                 cupo=30,
-                estado="cerrado",
+                estado=EstadoGrupo.CERRADO,
             )
             db.add(grupo)
             db.flush()
         grupos_pasados.append((grupo, nota))
 
     matricula_pasada = _asegurar_matricula(
-        db, ana, periodo_anterior, [g for g, _ in grupos_pasados], "confirmada"
+        db, ana, periodo_anterior, [g for g, _ in grupos_pasados], EstadoMatricula.CONFIRMADA
     )
     for grupo, nota in grupos_pasados:
         detalle = db.scalar(
@@ -633,7 +641,7 @@ def seed_matriculas(db: Session, base: dict, grupos: list[Grupo]) -> None:
             Pago(
                 id_matricula=matricula_pasada.id_matricula,
                 monto=150.00,
-                estado="pagado",
+                estado=EstadoPago.PAGADO,
                 metodo="transferencia",
                 referencia="PAGO-2025-0001",
             )
@@ -645,14 +653,14 @@ def seed_matriculas(db: Session, base: dict, grupos: list[Grupo]) -> None:
         grupos_por_codigo["IS-413-A"],
     ]
     matricula_actual = _asegurar_matricula(
-        db, ana, periodo_actual, grupos_actuales, "pendiente"
+        db, ana, periodo_actual, grupos_actuales, EstadoMatricula.PENDIENTE
     )
     if not matricula_actual.pagos:
         db.add(
             Pago(
                 id_matricula=matricula_actual.id_matricula,
                 monto=150.00,
-                estado="pendiente",
+                estado=EstadoPago.PENDIENTE,
                 metodo="transferencia",
                 referencia="PAGO-2026-0001",
             )
@@ -660,7 +668,7 @@ def seed_matriculas(db: Session, base: dict, grupos: list[Grupo]) -> None:
 
     if juan:
         grupos_juan = [grupos_por_codigo["IS-414-A"]]
-        _asegurar_matricula(db, juan, periodo_actual, grupos_juan, "pendiente")
+        _asegurar_matricula(db, juan, periodo_actual, grupos_juan, EstadoMatricula.PENDIENTE)
 
 
 def seed_infraestructura(db: Session) -> None:
@@ -675,15 +683,15 @@ def seed_infraestructura(db: Session) -> None:
             {"nombre": nombre},
             rol=rol,
             host=f"{nombre.lower()}.universidad.local",
-            estado="online",
+            estado=EstadoNodo.ONLINE,
             latencia_ms=latencia,
             replicacion_pct=replicacion,
         )
 
     for codigo, tipo, estado, nodos, detalle in [
-        ("TXN-1041", "Actualización", "PREPARE", 3, "Sincronización de matrícula entre sedes"),
-        ("TXN-1039", "Consulta", "COMMIT", 2, "Consulta global de estudiantes"),
-        ("TXN-1038", "Consulta", "EJECUTANDO", 1, "Listado de oferta académica"),
+        ("TXN-1041", "Actualización", EstadoTransaccion.PREPARE, 3, "Sincronización de matrícula entre sedes"),
+        ("TXN-1039", "Consulta", EstadoTransaccion.COMMIT, 2, "Consulta global de estudiantes"),
+        ("TXN-1038", "Consulta", EstadoTransaccion.EJECUTANDO, 1, "Listado de oferta académica"),
     ]:
         _get_or_create(
             db,

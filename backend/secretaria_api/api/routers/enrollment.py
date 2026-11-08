@@ -9,6 +9,8 @@ from ...models import (
     Calificacion,
     DetalleMatricula,
     Estudiante,
+    EstadoDetalle,
+    EstadoMatricula,
     Grupo,
     Horario,
     Matricula,
@@ -18,8 +20,13 @@ from ...models import (
 )
 from ...schemas.enrollment import EnrollRequest
 from ...services.audit import registrar_auditoria, registrar_evento
-from ...services.enrollment_service import EnrollmentError, matricular, obtener_estudiante
-from ..deps import get_client_ip, get_current_user, require_admin
+from ...services.enrollment_service import EnrollmentError, matricular
+from ..deps import (
+    estudiante_actual,
+    get_client_ip,
+    get_current_user,
+    require_admin,
+)
 from ..serializers import group_out
 
 router = APIRouter(prefix="/enrollments", tags=["Matrícula"])
@@ -122,7 +129,7 @@ def crear_matricula(
 def mi_matricula(
     usuario: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    estudiante = obtener_estudiante(db, usuario)
+    estudiante = estudiante_actual(db, usuario)
     matriculas = db.scalars(
         _matricula_query()
         .join(PeriodoAcademico, PeriodoAcademico.id_periodo == Matricula.id_periodo)
@@ -147,7 +154,11 @@ def listar_matriculas(
     if periodo_id:
         consulta = consulta.where(Matricula.id_periodo == periodo_id)
     if estado:
-        consulta = consulta.where(Matricula.estado == estado)
+        try:
+            estado_enum = EstadoMatricula(estado)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Estado de matrícula inválido.")
+        consulta = consulta.where(Matricula.estado == estado_enum)
     matriculas = db.scalars(consulta.order_by(Matricula.created_at.desc())).unique().all()
     return [_matricula_out(db, matricula) for matricula in matriculas]
 
@@ -162,7 +173,7 @@ def detalle_matricula(
     if not matricula:
         raise HTTPException(status_code=404, detail="Matrícula no encontrada.")
     if usuario.rol.nombre not in {"admin", "admin_facultad", "coordinador", "secretaria"}:
-        estudiante = obtener_estudiante(db, usuario)
+        estudiante = estudiante_actual(db, usuario)
         if matricula.id_estudiante != estudiante.id_estudiante:
             raise HTTPException(status_code=403, detail="No puede consultar esta matrícula.")
     return _matricula_out(db, matricula)
@@ -178,13 +189,13 @@ def confirmar_matricula(
     matricula = db.scalar(_matricula_query().where(Matricula.id_matricula == id_matricula))
     if not matricula:
         raise HTTPException(status_code=404, detail="Matrícula no encontrada.")
-    if matricula.estado == "anulada":
+    if matricula.estado == EstadoMatricula.ANULADA:
         raise HTTPException(status_code=400, detail="No se puede confirmar una matrícula anulada.")
     if not matricula.detalles:
         raise HTTPException(status_code=400, detail="La matrícula no tiene asignaturas.")
-    matricula.estado = "confirmada"
+    matricula.estado = EstadoMatricula.CONFIRMADA
     for detalle in matricula.detalles:
-        detalle.estado = "inscrito"
+        detalle.estado = EstadoDetalle.INSCRITO
     registrar_auditoria(
         db,
         usuario,
@@ -210,17 +221,17 @@ def anular_matricula(
     if not matricula:
         raise HTTPException(status_code=404, detail="Matrícula no encontrada.")
     if usuario.rol.nombre not in {"admin", "admin_facultad", "coordinador", "secretaria"}:
-        estudiante = obtener_estudiante(db, usuario)
+        estudiante = estudiante_actual(db, usuario)
         if matricula.id_estudiante != estudiante.id_estudiante:
             raise HTTPException(status_code=403, detail="No puede anular esta matrícula.")
-        if matricula.estado == "confirmada":
+        if matricula.estado == EstadoMatricula.CONFIRMADA:
             raise HTTPException(
                 status_code=400,
                 detail="La matrícula ya está confirmada. Contacte a Secretaría para anularla.",
             )
-    matricula.estado = "anulada"
+    matricula.estado = EstadoMatricula.ANULADA
     for detalle in matricula.detalles:
-        detalle.estado = "retirado"
+        detalle.estado = EstadoDetalle.RETIRADO
     matricula.total_creditos = 0
     registrar_auditoria(
         db,
@@ -252,24 +263,24 @@ def retirar_asignatura(
     )
     if not detalle:
         raise HTTPException(status_code=404, detail="Detalle de matrícula no encontrado.")
-    if detalle.estado != "inscrito":
+    if detalle.estado != EstadoDetalle.INSCRITO:
         raise HTTPException(status_code=400, detail="La asignatura ya no está inscrita.")
 
     es_staff = usuario.rol.nombre in {"admin", "admin_facultad", "coordinador", "secretaria"}
     if not es_staff:
-        estudiante = obtener_estudiante(db, usuario)
+        estudiante = estudiante_actual(db, usuario)
         if detalle.matricula.id_estudiante != estudiante.id_estudiante:
             raise HTTPException(status_code=403, detail="No puede retirar esta asignatura.")
-        if detalle.matricula.estado == "confirmada":
+        if detalle.matricula.estado == EstadoMatricula.CONFIRMADA:
             raise HTTPException(
                 status_code=400,
                 detail="La matrícula está confirmada. Contacte a Secretaría para retiros.",
             )
 
-    detalle.estado = "retirado"
+    detalle.estado = EstadoDetalle.RETIRADO
     matricula = detalle.matricula
     matricula.total_creditos = sum(
-        d.grupo.materia.creditos for d in matricula.detalles if d.estado == "inscrito"
+        d.grupo.materia.creditos for d in matricula.detalles if d.estado == EstadoDetalle.INSCRITO
     )
     registrar_auditoria(
         db,
@@ -288,7 +299,7 @@ def retirar_asignatura(
 def mis_calificaciones(
     usuario: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    estudiante = obtener_estudiante(db, usuario)
+    estudiante = estudiante_actual(db, usuario)
     calificaciones = db.scalars(
         select(Calificacion)
         .join(DetalleMatricula, DetalleMatricula.id_detalle == Calificacion.id_detalle)

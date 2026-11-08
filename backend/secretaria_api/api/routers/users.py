@@ -20,12 +20,19 @@ from ...models import (
 )
 from ...schemas.people import UsuarioCreate, UsuarioStatusUpdate
 from ...services.audit import registrar_auditoria
-from ..deps import get_client_ip, get_current_user, require_admin, require_superadmin
+from ..deps import (
+    get_client_ip,
+    get_current_user,
+    require_admin,
+    require_roles,
+    require_superadmin,
+)
 from ..serializers import professor_out, student_out, user_out
 
 router = APIRouter(prefix="/users", tags=["Usuarios y roles"])
 
 STAFF_ROLE_NAMES = {"admin", "admin_facultad", "coordinador", "secretaria"}
+DIRECTORY_ROLES = ("admin", "admin_facultad", "coordinador")
 
 
 @router.get("")
@@ -93,7 +100,7 @@ def matriz_permisos(
 
 @router.get("/students")
 def listar_estudiantes(
-    _: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
+    _: Usuario = Depends(require_roles(*DIRECTORY_ROLES)), db: Session = Depends(get_db)
 ):
     estudiantes = db.scalars(
         select(Estudiante).options(
@@ -107,7 +114,7 @@ def listar_estudiantes(
 
 @router.get("/professors")
 def listar_profesores(
-    _: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
+    _: Usuario = Depends(require_roles(*DIRECTORY_ROLES)), db: Session = Depends(get_db)
 ):
     profesores = db.scalars(
         select(Profesor).options(

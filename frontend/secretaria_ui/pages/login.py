@@ -32,14 +32,16 @@ async def login_page() -> None:
                 ui.html("<h1>Universidad<br>Distribuida 360°</h1>")
                 ui.html(
                     "<p>Sistema de gestión y monitoreo de una base de datos universitaria "
-                    "distribuida entre Panamá, Coclé y Veraguas.</p>"
+                    "distribuida entre Panamá, Coclé y Veraguas.<br>"
+                    "<small>La capa distribuida (2PC, replicación y fragmentación) se "
+                    "presenta como simulación académica sobre una única base de datos.</small></p>"
                 )
                 ui.html(
                     "<ul class=\"auth-features\">"
-                    "<li>✓ Infraestructura multisede</li>"
+                    "<li>✓ Infraestructura multisede (simulada)</li>"
                     "<li>✓ Consultas globales</li>"
-                    "<li>✓ Replicación y sincronización</li>"
-                    "<li>✓ Monitoreo de transacciones 2PC</li>"
+                    "<li>✓ Replicación y sincronización (lógica)</li>"
+                    "<li>✓ Monitoreo de transacciones 2PC (simulado)</li>"
                     "</ul>"
                 )
 

@@ -15,7 +15,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin
+from .base import Base, TimestampMixin, enum_column
+from .enums import EstadoActivo
 
 
 class Rol(Base, TimestampMixin):
@@ -96,7 +97,9 @@ class Estudiante(Base, TimestampMixin):
     id_carrera: Mapped[int] = mapped_column(ForeignKey("carrera.id_carrera"), nullable=False)
     id_plan: Mapped[int | None] = mapped_column(ForeignKey("plan_estudio.id_plan"))
     codigo: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
-    estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
+    estado: Mapped[EstadoActivo] = mapped_column(
+        enum_column(EstadoActivo), default=EstadoActivo.ACTIVO, nullable=False
+    )
     indice_academico: Mapped[float] = mapped_column(Numeric(3, 2), default=0, nullable=False)
     anio_ingreso: Mapped[int] = mapped_column(Integer, default=2022, nullable=False)
 
@@ -116,7 +119,9 @@ class Profesor(Base, TimestampMixin):
     id_sede: Mapped[int | None] = mapped_column(ForeignKey("sede.id_sede"))
     categoria: Mapped[str] = mapped_column(String(40), default="docente", nullable=False)
     dedicacion: Mapped[str] = mapped_column(String(40), default="tiempo completo", nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
+    estado: Mapped[EstadoActivo] = mapped_column(
+        enum_column(EstadoActivo), default=EstadoActivo.ACTIVO, nullable=False
+    )
 
     usuario: Mapped[Usuario] = relationship(back_populates="profesor")
     titulos: Mapped[list["TituloAcademico"]] = relationship(back_populates="profesor")

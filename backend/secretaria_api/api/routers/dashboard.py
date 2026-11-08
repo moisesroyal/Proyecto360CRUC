@@ -12,6 +12,9 @@ from ...models import (
     Carrera,
     DetalleMatricula,
     Estudiante,
+    EstadoMatricula,
+    EstadoNodo,
+    EstadoPago,
     Grupo,
     Horario,
     Materia,
@@ -21,8 +24,7 @@ from ...models import (
     PeriodoAcademico,
     Profesor,
 )
-from ...services.enrollment_service import cupos_disponibles, obtener_estudiante
-from ..deps import get_current_user, require_admin
+from ..deps import estudiante_actual, get_current_user, require_admin
 from ..serializers import group_out, node_out, student_out
 from ...models import Usuario
 
@@ -74,11 +76,11 @@ def summary(
             "matriculas": contar(Matricula),
             "pagos_pendientes": int(
                 db.scalar(
-                    select(func.count()).select_from(Pago).where(Pago.estado == "pendiente")
+                    select(func.count()).select_from(Pago).where(Pago.estado == EstadoPago.PENDIENTE)
                 )
                 or 0
             ),
-            "nodos_online": sum(1 for nodo in nodos if nodo.estado == "online"),
+            "nodos_online": sum(1 for nodo in nodos if nodo.estado == EstadoNodo.ONLINE),
             "nodos_total": len(nodos),
             "latencia_promedio": round(
                 sum(nodo.latencia_ms for nodo in nodos) / len(nodos), 1
@@ -117,7 +119,7 @@ def summary(
 def student_dashboard(
     usuario: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> dict:
-    estudiante = obtener_estudiante(db, usuario)
+    estudiante = estudiante_actual(db, usuario)
     estudiante = db.scalar(
         select(Estudiante)
         .where(Estudiante.id_estudiante == estudiante.id_estudiante)
@@ -130,7 +132,7 @@ def student_dashboard(
     matricula = db.scalar(
         select(Matricula)
         .join(PeriodoAcademico, PeriodoAcademico.id_periodo == Matricula.id_periodo)
-        .where(Matricula.id_estudiante == estudiante.id_estudiante, Matricula.estado != "anulada")
+        .where(Matricula.id_estudiante == estudiante.id_estudiante, Matricula.estado != EstadoMatricula.ANULADA)
         .order_by(
             PeriodoAcademico.anio.desc(),
             PeriodoAcademico.numero.desc(),
@@ -162,7 +164,7 @@ def student_dashboard(
             )
 
     pagos = matricula.pagos if matricula else []
-    pagos_pendientes = [p for p in pagos if p.estado == "pendiente"]
+    pagos_pendientes = [p for p in pagos if p.estado == EstadoPago.PENDIENTE]
     estado_financiero = "Paz y Salvo" if not pagos_pendientes else "Pago pendiente"
 
     calificaciones = []

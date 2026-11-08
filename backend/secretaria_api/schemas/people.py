@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ..models.enums import EstadoActivo
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -76,7 +78,7 @@ class EstudianteOut(ORMModel):
     id_carrera: int
     id_plan: int | None = None
     codigo: str
-    estado: str
+    estado: EstadoActivo
     indice_academico: float
     anio_ingreso: int
 
@@ -94,7 +96,7 @@ class ProfesorOut(ORMModel):
     id_sede: int | None = None
     categoria: str
     dedicacion: str
-    estado: str
+    estado: EstadoActivo
 
 
 class TituloCreate(BaseModel):

@@ -19,15 +19,15 @@ ROLE_LABELS = {
 
 SECTION_TITLES = {
     "dashboard": "Dashboard",
-    "infrastructure": "Estado de nodos",
-    "replication": "Red y replicación",
+    "infrastructure": "Estado de nodos (simulación)",
+    "replication": "Red y replicación (simulación)",
     "architecture": "Arquitectura y diccionario",
-    "data": "Distribución de datos",
-    "fragmentation": "Fragmentación",
-    "transactions": "Monitor 2PC",
-    "concurrency": "Concurrencia y bloqueos",
-    "queries": "Consultas globales y JOINs",
-    "recovery": "Logs y fallos",
+    "data": "Distribución de datos (simulación)",
+    "fragmentation": "Fragmentación (simulación)",
+    "transactions": "Monitor 2PC (simulación)",
+    "concurrency": "Concurrencia y bloqueos (simulación)",
+    "queries": "Consultas globales y JOINs (simulación)",
+    "recovery": "Logs y fallos (simulación)",
     "users": "Usuarios y permisos",
     "academic": "Estructura académica",
     "periods": "Períodos académicos",
@@ -49,32 +49,32 @@ ADMIN_NAV = [
     {
         "title": "▣ Infraestructura",
         "items": [
-            ("infrastructure", "◉", "Estado de nodos"),
-            ("replication", "⇄", "Red y replicación"),
+            ("infrastructure", "◉", "Estado de nodos (sim)"),
+            ("replication", "⇄", "Red y replicación (sim)"),
             ("architecture", "▤", "Arquitectura y diccionario"),
         ],
     },
     {
         "title": "▤ Datos distribuidos",
         "items": [
-            ("data", "◫", "Distribución de datos"),
-            ("fragmentation", "◧", "Fragmentación"),
+            ("data", "◫", "Distribución de datos (sim)"),
+            ("fragmentation", "◧", "Fragmentación (sim)"),
         ],
     },
     {
         "title": "↻ Transacciones",
         "items": [
-            ("transactions", "⇋", "Monitor 2PC"),
-            ("concurrency", "⚿", "Concurrencia y bloqueos"),
+            ("transactions", "⇋", "Monitor 2PC (sim)"),
+            ("concurrency", "⚿", "Concurrencia y bloqueos (sim)"),
         ],
     },
     {
         "title": "⌕ Consultas",
-        "items": [("queries", "⌕", "Consultas globales")],
+        "items": [("queries", "⌕", "Consultas globales (sim)")],
     },
     {
         "title": "⚠ Recuperación",
-        "items": [("recovery", "⚠", "Logs y fallos")],
+        "items": [("recovery", "⚠", "Logs y fallos (sim)")],
     },
     {
         "title": "⚙ Administración",
@@ -160,8 +160,8 @@ def build_shell(user: dict, section: str) -> Any:
                     with ui.element("div"):
                         ui.html(f'<strong>{user.get("nombre", "")}</strong>')
                         ui.html(f'<small>{ROLE_LABELS.get(role, role)}</small>')
-                    ui.button("Salir", on_click=_logout).classes("logout-btn").props(
-                        "flat no-caps dense"
-                    )
+                    ui.button("Salir", on_click=_logout, color="white").classes(
+                        "logout-btn"
+                    ).props("flat no-caps dense")
             content = ui.element("div").classes("content")
     return content

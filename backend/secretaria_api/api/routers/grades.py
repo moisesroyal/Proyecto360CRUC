@@ -9,6 +9,7 @@ from ...models import (
     Calificacion,
     DetalleMatricula,
     Estudiante,
+    EstadoDetalle,
     Grupo,
     Matricula,
     Profesor,
@@ -145,7 +146,7 @@ def registrar_calificacion(
     detalle = db.scalar(_detalle_query().where(DetalleMatricula.id_detalle == payload.id_detalle))
     if not detalle:
         raise HTTPException(status_code=404, detail="Detalle de matrícula no encontrado.")
-    if detalle.estado != "inscrito":
+    if detalle.estado != EstadoDetalle.INSCRITO:
         raise HTTPException(status_code=400, detail="La asignatura no está activa.")
 
     if usuario.rol.nombre == "profesor":

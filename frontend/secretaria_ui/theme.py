@@ -14,7 +14,6 @@ body { background: var(--bg); color: var(--text); }
 .main { min-height: 100vh; }
 .topbar { position: sticky; top: 0; z-index: 15; }
 .sidebar nav { flex: 1; overflow-y: auto; padding: 8px 10px 18px; }
-.content { padding: 26px 30px 40px; }
 .nav-item.q-btn {
   justify-content: flex-start;
   min-height: 0 !important;
@@ -23,10 +22,11 @@ body { background: var(--bg); color: var(--text); }
   letter-spacing: 0;
   font-weight: 500;
   font-size: 13px;
-  color: #d8e1ef !important;
 }
+.nav-item.q-btn, .nav-item.q-btn .q-btn__content { color: #f8fafc !important; }
 .nav-item.q-btn .q-btn__content { justify-content: flex-start; width: 100%; }
-.nav-item.q-btn.active, .nav-item.q-btn:hover { background: #1d4ed8 !important; color: #fff !important; }
+.nav-item.q-btn:hover, .nav-item.q-btn:hover .q-btn__content { background: rgba(255,255,255,.12) !important; color: #fff !important; }
+.nav-item.q-btn.active, .nav-item.q-btn.active .q-btn__content { background: var(--navy-3) !important; color: #fff !important; }
 .nav-title { display: block; }
 .q-btn.primary-btn, .q-btn.secondary-btn { text-transform: none; min-height: 0; font-family: inherit; }
 .q-btn.primary-btn .q-btn__content { padding: 2px 4px; }
@@ -88,9 +88,9 @@ def apply_theme() -> None:
     css = (_ASSETS / "style.css").read_text(encoding="utf-8")
     ui.add_css(css + _OVERRIDES, shared=True)
     ui.colors(
-        primary="#2563eb",
+        primary="#2c4a72",
         secondary="#0f172a",
-        accent="#7c3aed",
+        accent="#64748b",
         positive="#16a34a",
         warning="#d97706",
         negative="#dc2626",

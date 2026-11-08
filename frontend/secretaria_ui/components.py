@@ -157,6 +157,21 @@ def alert(text: str, kind: str = "warning") -> None:
     ui.html(f'<div class="alert {kind}">{esc(text)}</div>')
 
 
+SIM_NOTICE_TEXT = (
+    "Vista de simulación académica: la arquitectura distribuida "
+    "(2PC, replicación y fragmentación) se modela lógicamente sobre una "
+    "única base de datos PostgreSQL."
+)
+
+
+def sim_badge() -> None:
+    ui.html('<span class="badge yellow">SIMULACIÓN</span>')
+
+
+def sim_notice(text: str | None = None) -> None:
+    alert(text or SIM_NOTICE_TEXT, "warning")
+
+
 def table(
     headers: list[str],
     rows: list[list[Any]],

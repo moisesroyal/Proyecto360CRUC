@@ -4,6 +4,8 @@ from datetime import date, time
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..models.enums import EstadoActivo, EstadoGrupo, EstadoPeriodo
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -81,7 +83,7 @@ class PlanOut(ORMModel):
     anio: int
     id_carrera: int
     creditos_totales: int
-    estado: str
+    estado: EstadoActivo
 
 
 class MateriaCreate(BaseModel):
@@ -123,7 +125,7 @@ class PeriodoCreate(BaseModel):
     tipo: str = "semestre"
     fecha_inicio: date
     fecha_fin: date
-    estado: str = "planificado"
+    estado: EstadoPeriodo = EstadoPeriodo.PLANIFICADO
     matricula_abierta: bool = False
     max_creditos: int = 24
 
@@ -136,7 +138,7 @@ class PeriodoOut(ORMModel):
     tipo: str
     fecha_inicio: date
     fecha_fin: date
-    estado: str
+    estado: EstadoPeriodo
     matricula_abierta: bool
     max_creditos: int
 
@@ -190,4 +192,4 @@ class GrupoOut(ORMModel):
     id_profesor: int | None = None
     codigo: str
     cupo: int
-    estado: str
+    estado: EstadoGrupo

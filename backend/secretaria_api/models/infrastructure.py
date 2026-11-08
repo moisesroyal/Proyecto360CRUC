@@ -6,7 +6,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin
+from .base import Base, TimestampMixin, enum_column
+from .enums import EstadoNodo, EstadoTransaccion
 
 
 class Nodo(Base, TimestampMixin):
@@ -17,7 +18,9 @@ class Nodo(Base, TimestampMixin):
     nombre: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
     rol: Mapped[str] = mapped_column(String(120), default="nodo regional", nullable=False)
     host: Mapped[str] = mapped_column(String(120), default="localhost", nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="online", nullable=False)
+    estado: Mapped[EstadoNodo] = mapped_column(
+        enum_column(EstadoNodo), default=EstadoNodo.ONLINE, nullable=False
+    )
     latencia_ms: Mapped[int] = mapped_column(Integer, default=15, nullable=False)
     replicacion_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=100, nullable=False)
     ultima_sincronizacion: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -29,7 +32,9 @@ class TransaccionDistribuida(Base, TimestampMixin):
     id_transaccion: Mapped[int] = mapped_column(Integer, primary_key=True)
     codigo: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
     tipo: Mapped[str] = mapped_column(String(40), nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="PREPARE", nullable=False)
+    estado: Mapped[EstadoTransaccion] = mapped_column(
+        enum_column(EstadoTransaccion), default=EstadoTransaccion.PREPARE, nullable=False
+    )
     nodos_involucrados: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     detalle: Mapped[str | None] = mapped_column(Text)
     iniciada_en: Mapped[datetime] = mapped_column(

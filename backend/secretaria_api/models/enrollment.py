@@ -15,7 +15,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin
+from .base import Base, TimestampMixin, enum_column
+from .enums import EstadoDetalle, EstadoMatricula, EstadoPago
 
 
 class Matricula(Base, TimestampMixin):
@@ -29,7 +30,9 @@ class Matricula(Base, TimestampMixin):
         ForeignKey("periodo_academico.id_periodo"), nullable=False
     )
     fecha: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="pendiente", nullable=False)
+    estado: Mapped[EstadoMatricula] = mapped_column(
+        enum_column(EstadoMatricula), default=EstadoMatricula.PENDIENTE, nullable=False
+    )
     total_creditos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     __table_args__ = (
@@ -52,7 +55,9 @@ class DetalleMatricula(Base, TimestampMixin):
         ForeignKey("matricula.id_matricula", ondelete="CASCADE"), nullable=False
     )
     id_grupo: Mapped[int] = mapped_column(ForeignKey("grupo.id_grupo"), nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="inscrito", nullable=False)
+    estado: Mapped[EstadoDetalle] = mapped_column(
+        enum_column(EstadoDetalle), default=EstadoDetalle.INSCRITO, nullable=False
+    )
     nota_final: Mapped[float | None] = mapped_column(Numeric(5, 2))
 
     __table_args__ = (
@@ -92,7 +97,9 @@ class Pago(Base, TimestampMixin):
     )
     monto: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     fecha: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
-    estado: Mapped[str] = mapped_column(String(20), default="pendiente", nullable=False)
+    estado: Mapped[EstadoPago] = mapped_column(
+        enum_column(EstadoPago), default=EstadoPago.PENDIENTE, nullable=False
+    )
     referencia: Mapped[str | None] = mapped_column(String(80))
     metodo: Mapped[str] = mapped_column(String(40), default="transferencia", nullable=False)
     registrado_por: Mapped[int | None] = mapped_column(ForeignKey("usuario.id_usuario"))

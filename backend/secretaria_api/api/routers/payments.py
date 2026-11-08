@@ -5,19 +5,51 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from ...core.config import settings
 from ...core.database import get_db
-from ...models import Estudiante, Matricula, Pago, Usuario
-from ...schemas.enrollment import PagoCreate
+from ...models import (
+    Estudiante,
+    EstadoMatricula,
+    Matricula,
+    Pago,
+    Usuario,
+)
+from ...schemas.enrollment import EstadoPago, PagoCreate
 from ...services.audit import registrar_auditoria, registrar_evento
-from ...services.enrollment_service import obtener_estudiante
-from ..deps import get_client_ip, get_current_user, require_admin
+from ..deps import (
+    estudiante_actual,
+    get_client_ip,
+    get_current_user,
+    require_admin,
+)
 from ..serializers import group_out
 
 router = APIRouter(prefix="/payments", tags=["Pagos"])
 
 
 class PagoEstadoUpdate(BaseModel):
-    estado: str
+    estado: EstadoPago
+
+
+def _tarifa_esperada(db: Session, matricula: Matricula) -> float:
+    """Monto esperado: el de la boleta pendiente si existe; si no, la tarifa configurada."""
+    pendiente = db.scalar(
+        select(Pago)
+        .where(Pago.id_matricula == matricula.id_matricula, Pago.estado == EstadoPago.PENDIENTE)
+        .order_by(Pago.created_at.desc(), Pago.id_pago.desc())
+        .limit(1)
+    )
+    if pendiente:
+        return float(pendiente.monto)
+    return settings.matricula_fee
+
+
+def _validar_monto(monto: float, tarifa: float) -> None:
+    if abs(monto - tarifa) > 0.01:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El monto ({monto:.2f}) no coincide con la tarifa esperada ({tarifa:.2f}).",
+        )
 
 
 def _pago_out(pago: Pago) -> dict:
@@ -51,7 +83,11 @@ def listar_pagos(
 ):
     consulta = _query()
     if estado:
-        consulta = consulta.where(Pago.estado == estado)
+        try:
+            estado_enum = EstadoPago(estado)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Estado de pago inválido.")
+        consulta = consulta.where(Pago.estado == estado_enum)
     pagos = db.scalars(consulta.order_by(Pago.created_at.desc())).all()
     return [_pago_out(pago) for pago in pagos]
 
@@ -60,7 +96,7 @@ def listar_pagos(
 def mis_pagos(
     usuario: Usuario = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    estudiante = obtener_estudiante(db, usuario)
+    estudiante = estudiante_actual(db, usuario)
     pagos = db.scalars(
         _query()
         .join(Matricula, Matricula.id_matricula == Pago.id_matricula)
@@ -84,21 +120,24 @@ def registrar_pago(
     )
     if not matricula:
         raise HTTPException(status_code=404, detail="Matrícula no encontrada.")
-    if matricula.estado == "anulada":
+    if matricula.estado == EstadoMatricula.ANULADA:
         raise HTTPException(status_code=400, detail="No se puede pagar una matrícula anulada.")
 
     es_staff = usuario.rol.nombre in {"admin", "admin_facultad", "coordinador", "secretaria"}
     if not es_staff:
-        estudiante = obtener_estudiante(db, usuario)
+        estudiante = estudiante_actual(db, usuario)
         if matricula.id_estudiante != estudiante.id_estudiante:
             raise HTTPException(status_code=403, detail="No puede registrar pagos de otra matrícula.")
 
+    tarifa = _tarifa_esperada(db, matricula)
+    _validar_monto(payload.monto, tarifa)
+
     pago = None
     accion = "CREAR"
-    if payload.estado == "pagado":
+    if payload.estado == EstadoPago.PAGADO:
         pago = db.scalar(
             select(Pago)
-            .where(Pago.id_matricula == matricula.id_matricula, Pago.estado == "pendiente")
+            .where(Pago.id_matricula == matricula.id_matricula, Pago.estado == EstadoPago.PENDIENTE)
             .order_by(Pago.created_at.desc(), Pago.id_pago.desc())
             .limit(1)
         )
@@ -106,16 +145,16 @@ def registrar_pago(
             accion = "ACTUALIZAR"
 
     if pago:
-        pago.monto = payload.monto
+        pago.monto = tarifa
         pago.metodo = payload.metodo
         if payload.referencia:
             pago.referencia = payload.referencia
-        pago.estado = "pagado"
+        pago.estado = EstadoPago.PAGADO
         pago.registrado_por = usuario.id_usuario
     else:
         pago = Pago(
             id_matricula=matricula.id_matricula,
-            monto=payload.monto,
+            monto=tarifa,
             metodo=payload.metodo,
             referencia=payload.referencia,
             estado=payload.estado,
@@ -123,8 +162,8 @@ def registrar_pago(
         )
         db.add(pago)
 
-    if payload.estado == "pagado":
-        matricula.estado = "confirmada"
+    if payload.estado == EstadoPago.PAGADO:
+        matricula.estado = EstadoMatricula.CONFIRMADA
     db.flush()
     registrar_auditoria(
         db,
@@ -132,12 +171,12 @@ def registrar_pago(
         accion,
         "pago",
         pago.id_pago,
-        f"Pago {payload.monto} ({payload.estado}) para matrícula {matricula.id_matricula}",
+        f"Pago {tarifa:.2f} ({payload.estado.value}) para matrícula {matricula.id_matricula}",
         get_client_ip(request),
     )
     registrar_evento(
         db,
-        f"Pago registrado para matrícula {matricula.id_matricula}: ${payload.monto:.2f}",
+        f"Pago registrado para matrícula {matricula.id_matricula}: ${tarifa:.2f}",
         origen="pagos",
     )
     db.commit()
@@ -152,21 +191,22 @@ def cambiar_estado_pago(
     usuario: Usuario = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    if payload.estado not in {"pendiente", "pagado", "anulado"}:
-        raise HTTPException(status_code=400, detail="Estado de pago inválido.")
     pago = db.scalar(_query().where(Pago.id_pago == id_pago))
     if not pago:
         raise HTTPException(status_code=404, detail="Pago no encontrado.")
+    estado_anterior = pago.estado
     pago.estado = payload.estado
-    if payload.estado == "pagado":
-        pago.matricula.estado = "confirmada"
+    if payload.estado == EstadoPago.PAGADO:
+        pago.matricula.estado = EstadoMatricula.CONFIRMADA
+    elif estado_anterior == EstadoPago.PAGADO and pago.matricula.estado == EstadoMatricula.CONFIRMADA:
+        pago.matricula.estado = EstadoMatricula.PENDIENTE
     registrar_auditoria(
         db,
         usuario,
         "ACTUALIZAR",
         "pago",
         pago.id_pago,
-        f"Estado cambiado a {payload.estado}",
+        f"Estado cambiado de {estado_anterior.value} a {payload.estado.value}",
         get_client_ip(request),
     )
     db.commit()
