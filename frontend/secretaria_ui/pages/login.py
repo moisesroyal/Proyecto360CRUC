@@ -31,17 +31,14 @@ async def login_page() -> None:
                 ui.html('<div class="auth-logo">🎓</div>')
                 ui.html("<h1>Universidad<br>Distribuida 360°</h1>")
                 ui.html(
-                    "<p>Sistema de gestión y monitoreo de una base de datos universitaria "
-                    "distribuida entre Panamá, Coclé y Veraguas.<br>"
-                    "<small>La capa distribuida (2PC, replicación y fragmentación) se "
-                    "presenta como simulación académica sobre una única base de datos.</small></p>"
+                    "<p>Plataforma de gestión académica multisede.<br>"
+                    "<small>La capa distribuida se presenta como simulación académica.</small></p>"
                 )
                 ui.html(
                     "<ul class=\"auth-features\">"
-                    "<li>✓ Infraestructura multisede (simulada)</li>"
-                    "<li>✓ Consultas globales</li>"
-                    "<li>✓ Replicación y sincronización (lógica)</li>"
-                    "<li>✓ Monitoreo de transacciones 2PC (simulado)</li>"
+                    "<li>✓ Matrícula y calificaciones</li>"
+                    "<li>✓ Pagos y auditoría</li>"
+                    "<li>✓ Control de roles y sedes</li>"
                     "</ul>"
                 )
 
@@ -96,7 +93,7 @@ async def login_page() -> None:
                     "<strong>Estudiantes de Ingeniería en Informática</strong>.</p>"
                 )
                 ui.html(
-                    '<div class="login-hint">Acceso de demostración:<br>'
+                    '<div class="login-hint demo-access"><strong>Acceso de demostración</strong><br>'
                     "Administrador: <code>admin@universidad.edu.pa</code> / "
                     "<code>password123</code><br>"
                     "Estudiante: <code>estudiante@universidad.edu.pa</code> / "

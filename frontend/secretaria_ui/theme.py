@@ -79,8 +79,28 @@ body { background: var(--bg); color: var(--text); }
 .sql-box.q-textarea .q-field__control { background: #0b1220; border-radius: 9px; }
 .sql-box.q-textarea textarea { color: #dbeafe; font-family: Consolas, monospace; font-size: 12px; }
 .sql-box.q-textarea .q-field__label { color: #93a4c3; }
+.auth-submit {
+  color: #fff !important;
+}
+.auth-submit.q-btn, .auth-submit.q-btn .q-btn__content { color: #ffffff !important; }
 .login-hint { color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 14px; }
 .login-hint code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
+.demo-access {
+  background: #fff;
+  border: 1px solid #c9d9ee;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  color: #1e3a5c;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.demo-access code {
+  background: #eef4fb;
+  border: 1px solid #d5e2f2;
+  color: #16304f;
+  font-weight: 700;
+}
 """
 
 
