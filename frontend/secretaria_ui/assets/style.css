@@ -708,8 +708,8 @@ th {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 15% 20%, rgba(44,74,114,.28), transparent 30%),
-    radial-gradient(circle at 85% 80%, rgba(15,23,42,.30), transparent 28%),
+    linear-gradient(rgba(9, 20, 42, .48), rgba(13, 30, 55, .55)),
+    url("/static/login-bg.jpg") center / cover no-repeat,
     linear-gradient(135deg, #060d1c, #0e1f3d);
 }
 
@@ -726,8 +726,8 @@ th {
 
 .auth-brand {
   padding: 55px 48px;
-  color: #0f172a;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+  color: #f8fafc;
+  background: linear-gradient(150deg, #0f233c 0%, #143d59 55%, #134e4a 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -739,23 +739,28 @@ th {
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: #fff;
-  color: #0b1730;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(94, 234, 212, .35);
+  color: #5eead4;
   font-size: 30px;
   margin-bottom: 22px;
 }
 
 .auth-brand h1 {
-  color: #0f172a;
+  color: #f8fafc;
   font-size: 32px;
   line-height: 1.08;
   margin-bottom: 14px;
 }
 
 .auth-brand p {
-  color: #1e3a5c;
+  color: #cbd5e1;
   line-height: 1.6;
   font-size: 14px;
+}
+
+.auth-brand p small {
+  color: #94a3b8;
 }
 
 .auth-features {
@@ -766,13 +771,19 @@ th {
 }
 
 .auth-features li {
-  color: #0f172a;
+  color: #e2e8f0;
   font-size: 13px;
   font-weight: 600;
 }
 
+.auth-features li::first-letter {
+  color: #5eead4;
+}
+
 .auth-panel {
   padding: 45px;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   justify-content: center;
