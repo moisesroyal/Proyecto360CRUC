@@ -1,0 +1,18 @@
+EJECUCIÓN DEL PROYECTO
+======================
+
+TERMINAL 1 — BACKEND
+--------------------
+cd /home/moises/Django/Proyecto360/Arquitectura/backend
+DATABASE_URL='postgresql+psycopg://moises@/simplex' PGOPTIONS='-c search_path=secretaria_virtual' PYTHONPATH=. ../up/bin/uvicorn secretaria_api.main:app --reload --port 8000
+
+
+TERMINAL 2 — FRONTEND
+---------------------
+cd /home/moises/Django/Proyecto360/Arquitectura
+PYTHONPATH=frontend up/bin/uvicorn secretaria_ui.main:app --host 0.0.0.0 --port 8080
+
+
+ABRIR EN EL NAVEGADOR
+---------------------
+http://localhost:8080
